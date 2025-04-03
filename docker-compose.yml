@@ -1,0 +1,45 @@
+services:
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - financial_network
+
+  db:
+    image: postgres
+    container_name: db
+    environment:
+      POSTGRES_DB: currency_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - currency_db_data:/var/lib/postgresql/data
+    networks:
+      - financial_network
+
+  parser:
+    build: .
+    container_name: parser
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/currency_db
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - financial_network
+    volumes:
+      - currency_logs:/app/logs
+
+networks:
+  financial_network:
+
+volumes:
+  currency_logs:
+  currency_db_data:
